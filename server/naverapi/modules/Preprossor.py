@@ -33,7 +33,10 @@ def preprosessor(request):
     with  open(r".\asset\clova_data_dump.pickle",'wb') as fs:
         pickle.dump(temp_list, fs)
     service.pickle_find_highlight()
-    df=pd.read_pickle(r'.\asset\final_data_pickle')
+    df = pd.read_pickle(r'.\asset\final_data.pickle')
+    for i,k in zip(df.index, df['품사']):
+        temp=[i,k]
+        df=service.one_new_weight(temp)
     service.all_new_weight(df)
     return HttpResponse(i)
 
@@ -55,6 +58,15 @@ def sentiment_analysis(request):
     with  open(r".\asset\clova_data_dump.pickle",'wb') as fs:
         pickle.dump(temp, fs)
     service.pickle_find_highlight()
-    df=pd.read_pickle(r'.\asset\score.pickle')
-
+    df1=pd.read_pickle(r'.\asset\score.pickle')
+    df2 =pd.read_pickle(r'.\asset\final_data.pickle')
+    point=[]
+    for i in df1.index:
+        for k in df2.index:
+            if i==k and df1.loc[i]['품사']==df2.loc[k]['품사']:
+                point.append(df1.loc[i]['가중치'])
+    i=len(point)
+    high_point=
+    mid_point=
+    low_point
     return HttpResponse(r)

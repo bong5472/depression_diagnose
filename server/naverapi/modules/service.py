@@ -53,13 +53,15 @@ def excel_to_txt():
         f.write(temp)
         f.write('\n')
 
-# clova 과부하 대비 분할 데이터 병합 데이터
+# clova 과부하 대비 분할 데이터 병합 데이터(필요시 사용, 현재 사용 X)
 def pickle_merge():
     data=[]
     for i in range(1,24):
-        with open(r'C:\Users\user\Desktop\pickle\data'+str(i)+'.pickle','rb') as fr:
+        with open(r'.\asset\final_data.pickle','rb') as fr:
             data.append(pickle.load(fr))
-    with open(r'C:\Users\user\Desktop\pickle\data.pickle','wb') as fw:
+        with open(r'.\asset\clova_data.pickle','rb') as fr:
+            data.append(pickle.load(fr))
+    with open(r'.\final_data.pickle','wb') as fw:
         pickle.dump(data,fw)
     print(data)
 
@@ -120,17 +122,20 @@ def pickle_find_highlight():
             temp=eval(j)
             highligt+=find_highligt(temp)
     temp=konlp(highligt)
-    print(frame_dict(temp).to_pickle('data.pickle'))
-    with open(r".\asset\final_data.pickle", "wb") as fw:
-        pickle.dump(temp, fw)
+    frame_dict(temp).to_pickle(r'.\asset\final_data.pickle')
 
 #가중치 갱신 함수
 #1개 재계산
 def one_new_weight(nlp_result):
     df = pd.read_pickle('score_data.pickle')
-    for i in nlp_result
-
-    return
+    for i in range(len(df)):
+        if nlp_result[0] in df.index[i] and nlp_result[1] == df['품사'][i]:
+            df['갯수'][i] +=1
+        else:
+            df2=pd.DataFrame({'품사':nlp_result[1],'갯수':1}, index=[nlp_result[0]])
+            df = pd.concat([df,df2])
+            df = df.sort_values(by=['갯수'], ascending=[False])
+    return df
 #전체 재계산
 def all_new_weight(df):
     df['가중치']=0.0
