@@ -55,18 +55,22 @@ def sentiment_analysis(request):
     r = requests.post(url, data=json.dumps(data), headers=header)
     k = HttpResponse(r)
     temp=[k.getvalue().decode('utf-8')]
+    print(temp)
     with  open(r".\asset\clova_data_dump.pickle",'wb') as fs:
         pickle.dump(temp, fs)
     service.pickle_find_highlight()
     df1=pd.read_pickle(r'.\asset\score.pickle')
     df2 =pd.read_pickle(r'.\asset\final_data.pickle')
     point=[]
-    for i in df1.index:
-        for k in df2.index:
-            if i==k and df1.loc[i]['품사']==df2.loc[k]['품사']:
+    rematch=[]
+    for i in df2.index:
+        for k in df1.index:
+            if i==k and df1.loc[k]['품사']==df2.loc[i]['품사']:
+                rematch.append([i,df1.loc[i]['품사']])
                 point.append(df1.loc[i]['가중치'])
-    i=len(point)
-    high_point=
-    mid_point=
-    low_point
-    return HttpResponse(r)
+                break
+    count=len(point)
+    high_point=sum(point[:int(count*0.3)])/len(point[:int(count*0.3)])
+    mid_point=sum(point[int(count*0.3):int(count*0.6)])/len(point[int(count*0.3):int(count*0.6)])
+    low_point=sum(point[int(count*0.6):])/len(point[int(count*0.6):])
+    return HttpResponse(high_point,mid_point,low_point)
