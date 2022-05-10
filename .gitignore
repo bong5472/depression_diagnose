@@ -3,3 +3,6 @@
 
 # IDE SETTINGS
 .idea
+
+# Requirements
+requirements.txt

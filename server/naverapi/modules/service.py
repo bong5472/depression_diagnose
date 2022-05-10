@@ -18,7 +18,7 @@ def excel_to_txt():
     templist = []
     temp = ''
     load_ex = load_workbook(r' 엑셀현재 path')
-    f = open(r'.\asset\excel_to_data.txt ', 'a')
+    f = open(r'.\naverapi\modules\asset\excel_to_data.txt ', 'a')
     load_ex = load_ex['Sheet1']
     get_cell0 = load_ex['F2':'F9357']
     get_cell1 = load_ex['H2':'H9375']
@@ -57,11 +57,11 @@ def excel_to_txt():
 def pickle_merge():
     data=[]
     for i in range(1,24):
-        with open(r'.\asset\final_data.pickle','rb') as fr:
+        with open(r'.\naverapi\modules\asset\final_data.pickle','rb') as fr:
             data.append(pickle.load(fr))
-        with open(r'.\asset\clova_data.pickle','rb') as fr:
+        with open(r'.\naverapi\modules\asset\clova_data_dump.pickle','rb') as fr:
             data.append(pickle.load(fr))
-    with open(r'.\final_data.pickle','wb') as fw:
+    with open(r'.\naverapi\modules\final_data.pickle','wb') as fw:
         pickle.dump(data,fw)
     print(data)
 
@@ -103,26 +103,24 @@ def konlp(input):
 #데이터 프레임 생성 함수
 def frame_dict(x):
     frame = pd.DataFrame(x)
-    df=frame.transpose()
+    print(frame)
+    df = frame.transpose()
     df.columns = ['품사','갯수']
     df=df.sort_values(by=['갯수'],ascending=[False])
     df.to_excel(excel_writer='nlpsort.xlsx')
     return df
 
-
-
 #pickle 로드, 하이라이트 추출, nlp 분석함수,
 #데이터 프레임 변환 및 저장을 동시에 진행하는 메인함수
 def pickle_find_highlight():
     highligt=[]
-    with open(r'.\asset\clova_data.pickle', 'rb') as fr:
+
+    with open(r'.\naverapi\modules\asset\clova_data_dump.pickle', 'rb') as fr:
         data=pickle.load(fr)
-    for i in data:
-        for j in i:
-            temp=eval(j)
-            highligt+=find_highligt(temp)
+        data=eval(data[0])
+        highligt+=find_highligt(data)
     temp=konlp(highligt)
-    frame_dict(temp).to_pickle(r'.\asset\final_data.pickle')
+    frame_dict(temp).to_pickle(r'.\naverapi\modules\asset\final_data.pickle')
 
 #가중치 갱신 함수
 #1개 재계산
@@ -152,7 +150,4 @@ def all_new_weight(df):
         else:
             df['가중치'][i] = 1.95 - (score * k)
             k+=1
-    df.to_pickle(r'.\asset\score_data.pickle')
-
-df=pd.read_pickle('data.pickle')
-all_new_weight(df)
+    df.to_pickle(r'.\naverapi\modules\asset\score_data.pickle')
