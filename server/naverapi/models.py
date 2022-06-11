@@ -5,9 +5,12 @@ from user.models import Device
 
 class Log(models.Model):
     l_Id = models.AutoField(primary_key=True)
-    logDate = models.DateTimeField(auto_now_add=True)
+    logDate = models.DateField(auto_now_add=True)
     score = models.FloatField(null= False)
     deviceId = models.ForeignKey(Device, on_delete=models.CASCADE, db_column='deviceId')
+
+    class Meta:
+        db_table='log'
 
     def __str__(self):
         return self.title

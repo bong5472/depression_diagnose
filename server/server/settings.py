@@ -13,7 +13,7 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 import os
 import environ
 from pathlib import Path
-from .my_settings import db
+from .my_settings import db, CELERY_BROKER_URL, CELERY_ACCEPT_CONTENT, CELERY_TASK_SERIALIZER
 
 env = environ.Env(DEBUG=(bool, True))
 
@@ -30,6 +30,11 @@ environ.Env.read_env(
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = env('SECRET_KEY')
+
+# CELERY SET
+CELERY_BROKER_URL = CELERY_BROKER_URL
+CELERY_TASK_SERIALIZER = CELERY_TASK_SERIALIZER
+CELERY_ACCEPT_CONTENT = CELERY_ACCEPT_CONTENT
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DEBUG')
@@ -51,6 +56,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'user',
     'naverapi',
+    'celery',
 ]
 
 MIDDLEWARE = [

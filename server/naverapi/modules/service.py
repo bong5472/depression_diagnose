@@ -10,10 +10,11 @@ import json
 import pickle
 import openpyxl
 from openpyxl import load_workbook
-
+import os
 # 엑셀 데이터셋 -> 문자열 추출 함수
 # AI 허브 데이터 셋 기준 문자열 추출 함수
 # 파일 경로 및 엑셀 서식에 맞춰 코드 수정 필요
+currentPath = os.getcwd()
 def excel_to_txt():
     templist = []
     temp = ''
@@ -63,13 +64,11 @@ def pickle_merge():
             data.append(pickle.load(fr))
     with open(r'.\naverapi\modules\final_data.pickle','wb') as fw:
         pickle.dump(data,fw)
-    print(data)
 
 # clova 데이터 하이라이트 문자열 추출
 # 파라미터는 clova return 딕셔너리
 def find_highligt(ko_sentiment):
     highlight_list=[]
-    print(ko_sentiment)
     if 'status' in ko_sentiment.keys():
         return []
     sentences = ko_sentiment['sentences']
@@ -103,7 +102,6 @@ def konlp(input):
 #데이터 프레임 생성 함수
 def frame_dict(x):
     frame = pd.DataFrame(x)
-    print(frame)
     df = frame.transpose()
     df.columns = ['품사','갯수']
     df=df.sort_values(by=['갯수'],ascending=[False])
@@ -115,24 +113,26 @@ def frame_dict(x):
 def pickle_find_highlight():
     highligt=[]
 
-    with open(r'.\naverapi\modules\asset\clova_data_dump.pickle', 'rb') as fr:
+    with open(currentPath + r'\naverapi\modules\asset\clova_data_dump.pickle', 'rb') as fr:
         data=pickle.load(fr)
         data=eval(data[0])
         highligt+=find_highligt(data)
     temp=konlp(highligt)
-    frame_dict(temp).to_pickle(r'.\naverapi\modules\asset\final_data.pickle')
+    frame_dict(temp).to_pickle(currentPath+r'\naverapi\modules\asset\final_data.pickle')
 
 #가중치 갱신 함수
 #1개 재계산
 def one_new_weight(nlp_result):
-    df = pd.read_pickle('score_data.pickle')
-    for i in range(len(df)):
-        if nlp_result[0] in df.index[i] and nlp_result[1] == df['품사'][i]:
-            df['갯수'][i] +=1
-        else:
-            df2=pd.DataFrame({'품사':nlp_result[1],'갯수':1}, index=[nlp_result[0]])
-            df = pd.concat([df,df2])
-            df = df.sort_values(by=['갯수'], ascending=[False])
+    df = pd.read_pickle(currentPath + r'\naverapi\modules\asset\score_data.pickle')
+    for k in range(len(nlp_result)):
+        for i in range(len(df)):
+            if nlp_result[k][0] in df.index[i] and nlp_result[k][1] == df['품사'][i]:
+                df.iloc[i,1]+=1
+                break
+            elif i==len(df)-1:
+                df2=pd.DataFrame({'품사':nlp_result[k][1],'갯수':1}, index=[nlp_result[k][0]])
+                df = pd.concat([df,df2])
+                df = df.sort_values(by=['갯수'], ascending=[False])
     return df
 #전체 재계산
 def all_new_weight(df):
@@ -140,14 +140,14 @@ def all_new_weight(df):
     flag=df['갯수']>=5
     tmp_df=df[flag].drop_duplicates(['갯수'])
     score=round(1.95/len(tmp_df),8)
-    df['가중치'][0]=1.95
+    df.iloc[0,2]=1.95
     k=1
     for i in range(1,len(df[flag])):
         if k>514:
             print('오류')
         if df['갯수'][i-1] == df['갯수'][i]:
-            df['가중치'][i]=1.95-(score*k)
+            df.iloc[i,2]=1.95-(score*k)
         else:
-            df['가중치'][i] = 1.95 - (score * k)
+            df.iloc[i,2] = 1.95 - (score * k)
             k+=1
-    df.to_pickle(r'.\naverapi\modules\asset\score_data.pickle')
+    df.to_pickle(currentPath+r'\naverapi\modules\asset\score_data.pickle')

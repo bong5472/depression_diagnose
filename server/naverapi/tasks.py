@@ -1,63 +1,15 @@
-from django.http import HttpResponse
 import requests, json
 from django.conf import settings
 import pickle
-from . import service
+from .modules import service
 import pandas as pd
 import os
+from celery import shared_task
+from .models import Log
 
-def preprosessor(request):
-    service.excel_to_txt()
-    fopen = open(r'.\asset\data.txt', 'r')
-    i=0
-    temp_list = []
-    line = fopen.readlines()
-    while True:
-        if not line : break
-        client_id = getattr(settings, 'NAVER_ID')
-        client_secret = getattr(settings, 'NAVER_SECRET')
-        url = "https://naveropenapi.apigw.ntruss.com/sentiment-analysis/v1/analyze"
-        header = {
-            "X-NCP-APIGW-API-KEY-ID": client_id,
-            "X-NCP-APIGW-API-KEY": client_secret,
-            "Content-Type": "application/json"
-        }
-        data = {
-            'content': line[i]
-        }
-        r = requests.post(url, data=json.dumps(data), headers=header)
-        k = HttpResponse(r)
-        temp_list.append(k.getvalue().decode('utf-8'))
-        i+=1
-        if i==len(temp_list)-2:
-            break
-    fopen.close()
-    with open(r".\asset\clova_data_dump.pickle",'wb') as fs:
-        pickle.dump(temp_list, fs)
-    service.pickle_find_highlight()
-    df = pd.read_pickle(r'.\asset\final_data.pickle')
-    for i,k in zip(df.index, df['품사']):
-        temp=[i,k]
-        df=service.one_new_weight(temp)
-    service.all_new_weight(df)
-    return HttpResponse(i)
-
-def sentiment_analysis(request):
+@shared_task
+def sentiment_analysis(temp, deviceId):
     currentPath = os.getcwd()
-    client_id = getattr(settings, 'NAVER_ID')
-    client_secret = getattr(settings, 'NAVER_SECRET')
-    url = "https://naveropenapi.apigw.ntruss.com/sentiment-analysis/v1/analyze"
-    header = {
-        "X-NCP-APIGW-API-KEY-ID": client_id,
-        "X-NCP-APIGW-API-KEY": client_secret,
-        "Content-Type": "application/json"
-    }
-    data = {
-        'content': json.loads(request.body)['dialog'] #request 값으로 변경 예정
-    }
-    r = requests.post(url, data=json.dumps(data), headers=header)
-    k = HttpResponse(r)
-    temp = [k.getvalue().decode('utf-8')]
     if 'negative' not in temp[0].split(":")[2]:
         return 0
     pathname = os.path.join(currentPath, "naverapi", "modules", "asset", "clova_data_dump.pickle")
@@ -115,4 +67,11 @@ def sentiment_analysis(request):
         result_point = 1+count/5
     else:
         result_point = count/5
-    return HttpResponse(result_point)
+
+    #Log Insert
+    log = Log()
+    log.score = result_point
+    log.deviceId_id = deviceId
+    log.save()
+
+    return None

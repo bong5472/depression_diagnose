@@ -12,3 +12,6 @@ my_settings.py
 
 # Migration File
 migrations
+
+# REDIS
+Redis-x64-3.0.504
