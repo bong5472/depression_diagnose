@@ -2,11 +2,10 @@ from django.http import HttpResponse
 import requests, json
 from django.conf import settings
 import pickle
-import service
-import pandas as pd
 from . import service
 import pandas as pd
 import os
+
 def preprosessor(request):
     service.excel_to_txt()
     fopen = open(r'.\asset\data.txt', 'r')

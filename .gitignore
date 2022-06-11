@@ -6,3 +6,9 @@
 
 # Requirements
 requirements.txt
+
+# DB Setting
+my_settings.py
+
+# Migration File
+migrations
