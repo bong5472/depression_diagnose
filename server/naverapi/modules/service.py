@@ -78,6 +78,7 @@ def find_highligt(ko_sentiment):
         else:
             highlight_list.append(stc['content'][int(stc['highlights'][0]['offset']):
                                                  int(stc['highlights'][0]['offset'])+int(stc['highlights'][0]['length'])])
+    print(highlight_list)
     return highlight_list
 
 #nlp 분석
@@ -96,7 +97,7 @@ def konlp(input):
                     nlp_dict[j[0]][1] += 1
                 else:
                     nlp_dict[j[0]]=[j[1],1]
-
+    print(nlp_dict)
     return nlp_dict
 
 #데이터 프레임 생성 함수
@@ -112,7 +113,6 @@ def frame_dict(x):
 #데이터 프레임 변환 및 저장을 동시에 진행하는 메인함수
 def pickle_find_highlight():
     highligt=[]
-
     with open(currentPath + r'\naverapi\modules\asset\clova_data_dump.pickle', 'rb') as fr:
         data=pickle.load(fr)
         data=eval(data[0])

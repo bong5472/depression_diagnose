@@ -1,10 +1,13 @@
 from django.shortcuts import render
 from .models import User, Device
+from naverapi.models import Log
 import json
 import bcrypt
 import jwt
 from django.http import HttpResponse, JsonResponse
 from server.my_settings import SECRET_KEY, ALGORITHM
+from django.db.models import F, Func, Value, CharField
+import base64
 
 # Create your views here.
 
@@ -60,29 +63,83 @@ def register(request):
             device.userId = userId
             device.save()
 
-            return HttpResponse(result)
+            # 처리결과 전송
+            data = {
+                "success": True
+            }
+            return JsonResponse(data)
 
         except Exception as e:
-            return "Error Emerged: " + e
+            data = {
+                "success": False
+            }
+            return JsonResponse(data)
 
 #login
 def login(request):
-    try:
-        #JSON LOAD
-        input = request.body.decode('utf-8').split("&")
-        for i in input:
-            temp = i.split("=")
-            if temp[0] == "userId":
-                userId = temp[1]
-            elif temp[0] == "userPass":
-                userPassword = temp[1]
-            else:
-                continue
-        targetUser = User.objects.get(Id=userId)
-        bytes_inputPw = userPassword.encode('utf-8')
-        bytes_userPw = targetUser.Pw.encode('utf-8')
-        if bcrypt.checkpw(bytes_inputPw, bytes_userPw):
-            data = {'userId': targetUser.userId}
-            return HttpResponse(jwt.encode(data, SECRET_KEY, ALGORITHM).decode('utf-8'))
-    except Exception as e:
-        return "Error Emerged: " + e
+    if request.method == "POST":
+        try:
+            #JSON LOAD
+            input = request.body.decode('utf-8').split("&")
+            for i in input:
+                temp = i.split("=")
+                if temp[0] == "userId":
+                    userId = temp[1]
+                elif temp[0] == "userPass":
+                    userPassword = temp[1]
+                else:
+                    continue
+            targetUser = User.objects.get(Id=userId)
+            bytes_inputPw = userPassword.encode('utf-8')
+            bytes_userPw = targetUser.Pw.encode('utf-8')
+            if bcrypt.checkpw(bytes_inputPw, bytes_userPw):
+                data = {'userId': targetUser.userId}
+                token = jwt.encode(data, SECRET_KEY, ALGORITHM).decode('utf-8')
+                print(token)
+                data = {
+                    "success": True,
+                    "token": token
+                }
+                return JsonResponse(data)
+        except Exception as e:
+            print(e)
+            data = {
+                "success": False
+            }
+            return JsonResponse(data)
+
+#Give Data
+def giveData(request):
+    if request.method == "POST":
+        try:
+            #JSON LOADS
+            input = request.body.decode('utf-8').split("&")
+            for i in input:
+                temp = i.split("=")
+                if temp[0] == "token":
+                    token = temp[1]
+                else:
+                    continue
+            targetId = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])["userId"]
+            devices = Device.objects.filter(userId = targetId)
+            data = Log.objects.filter(deviceId_id__in=devices.values('deviceId')).values()
+            data = data.annotate(
+                logDate = Func(
+                    F('logDate'),
+                    Value('%m.%d %H'),
+                    function='DATE_FORMAT',
+                    output_field=CharField()
+                )
+            )
+            data = list(data)
+            newObj = {
+                "success": True,
+                "logList": data
+            }
+            return JsonResponse(newObj)
+        except Exception as e:
+            print(e)
+            data = {
+                "success": False
+            }
+            return JsonResponse(data)

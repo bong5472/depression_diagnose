@@ -3,6 +3,7 @@ from .tasks import sentiment_analysis
 from django.http import HttpResponse
 from django.conf import settings
 import json, requests
+from django.core.files.storage import default_storage
 
 # Create your views here.
 # Preprosessing

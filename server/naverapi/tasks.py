@@ -6,14 +6,15 @@ import pandas as pd
 import os
 from celery import shared_task
 from .models import Log
+from django.core.files.storage import default_storage
 
 @shared_task
 def sentiment_analysis(temp, deviceId):
+    print(temp)
     currentPath = os.getcwd()
     if 'negative' not in temp[0].split(":")[2]:
         return 0
     pathname = os.path.join(currentPath, "naverapi", "modules", "asset", "clova_data_dump.pickle")
-    print(temp)
     with open(pathname, 'wb') as fs:
         pickle.dump(temp, fs)
     service.pickle_find_highlight()
@@ -39,14 +40,25 @@ def sentiment_analysis(temp, deviceId):
     count = len(point)
     result_point=0
     point.sort(reverse=True)
-    if count ==1:
-        high_point = point[0]
-        mid_point= point[0]
-        low_point =point[0]
-    elif count==2:
-        high_point =point[0]
-        mid_point= sum[point]/2
-        low_point= point[1]
+    print(point)
+    if count == 1:
+        if point[0] > 1:
+            high_point = point[0] - 0.5
+            mid_point = high_point / 2
+            low_point = mid_point / 2
+        else:
+            high_point = point[0]
+            mid_point = point[0] / 2
+            low_point = point[0] / 3
+    elif count == 2:
+        if point[0] > 1.5:
+            high_point = point[0] - 0.3
+            mid_point = (point[0] + point[1]) / 2 - 0.3
+            low_point = point[1] - 0.3
+        else:
+            high_point = point[0]
+            mid_point = (point[0] + point[1]) / 2
+            low_point = point[1]
     elif count == 3:
         high_point = point[0]
         mid_point = point[1]
@@ -55,19 +67,21 @@ def sentiment_analysis(temp, deviceId):
         high_point = sum(point[:int(count*0.3)])/len(point[:int(count*0.3)])
         mid_point = sum(point[int(count*0.3):int(count*0.6)])/len(point[int(count*0.3):int(count*0.6)])
         low_point = sum(point[int(count*0.6):])/len(point[int(count*0.6):])
-    if count>=5 and low_point>1.5 :
-        result_point = 5+count/5
-    elif (mid_point+low_point)/2>1.4 or (high_point+mid_point+low_point)/3>1.6 or high_point>1.94:
-        result_point = 4+count/5
-    elif (high_point+mid_point+low_point)/3>1.3:
-        result_point = 3+ count/5
+    if count>10:
+        count=10
+    if count>=5 and low_point>1.6 :
+        result_point = 5+count/7
+    elif (mid_point+low_point)/2>1.6 or (high_point+mid_point+low_point)/3>1.7 or (high_point>1.94 and count>=5):
+        result_point = 4+count/7
+    elif (high_point+mid_point+low_point)/3>1.5:
+        result_point = 3+ count/7
     elif (high_point+mid_point+low_point)/3>1.0:
-        result_point =2 + count/5
+        result_point =2 + count/7
     elif (high_point+mid_point+low_point)/3>0.5:
-        result_point = 1+count/5
+        result_point = 1+count/7
     else:
-        result_point = count/5
-
+        result_point = count/7
+    print(result_point)
     #Log Insert
     log = Log()
     log.score = result_point
