@@ -1,5 +1,5 @@
 from .modules.Preprossor import preprosessor, sentiment_analysis
-from .tasks import sentiment_analysis
+from .tasks import sentiment_analysis, depression_messaging
 from django.http import HttpResponse
 from django.conf import settings
 import json, requests
@@ -18,12 +18,13 @@ def index(request):
         "Content-Type": "application/json"
     }
     data = {
-        'content': input['dialog']  # request 값으로 변경 예정
+        'content': input['dialog']
     }
     r = requests.post(url, data=json.dumps(data), headers=header)
     k = HttpResponse(r)
     temp = [k.getvalue().decode('utf-8')]
     sentiment_analysis.delay(temp, input['deviceId'])
+    depression_messaging.delay(input['deviceId'])
     return HttpResponse("Completed")
 
 def index2(request):

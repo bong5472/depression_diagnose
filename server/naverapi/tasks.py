@@ -1,5 +1,6 @@
 import requests, json
 from django.conf import settings
+from datetime import datetime
 import pickle
 from .modules import service
 import pandas as pd
@@ -7,6 +8,9 @@ import os
 from celery import shared_task
 from .models import Log
 from django.core.files.storage import default_storage
+from .depression_judgement import Depression_judgment
+from django.db import connection
+
 
 @shared_task
 def sentiment_analysis(temp, deviceId):
@@ -82,6 +86,7 @@ def sentiment_analysis(temp, deviceId):
     else:
         result_point = count/7
     print(result_point)
+
     #Log Insert
     log = Log()
     log.score = result_point
@@ -89,3 +94,42 @@ def sentiment_analysis(temp, deviceId):
     log.save()
 
     return None
+
+
+@shared_task
+def depression_messaging(deviceId):
+    # SQL을 이용하여 DataBase에서 우울 로그 추출
+    try:
+        # SQL LOADING
+        cur = connection.cursor()
+        sql = "SELECT score FROM log WHERE deviceId = %s ORDER BY logDate DESC LIMIT 3"
+        result = cur.execute(sql, [deviceId])
+        data = cur.fetchall()
+        connection.close()
+        argument = []
+
+        # Data Converting
+        for i in data:
+            argument.append(i[0])
+
+        # 이를 기반으로 함수에서 처리
+        decision_result = Depression_judgment(argument)
+        print(decision_result)
+
+        # 결과값 판정하여 메세지 보낼지 말지 여부 결정
+        # Firebase Cloud Messaing(FCM) 이용 ==> 추후 추가 연동
+        if decision_result == 3:
+            # 심각한 우울증
+            print("hard")
+        elif decision_result == 2:
+            # 우울감
+            print("sad")
+        else:
+            # 우울증 아님
+            print("normal")
+
+    except Exception as e:
+        print("Error Emerged")
+        print(e)
+        connection.rollback()
+        connection.close()

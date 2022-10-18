@@ -53,7 +53,7 @@ def sentiment_analysis(request):
         "Content-Type": "application/json"
     }
     data = {
-        'content': json.loads(request.body)['dialog'] #request 값으로 변경 예정
+        'content': json.loads(request.body)['dialog']
     }
     r = requests.post(url, data=json.dumps(data), headers=header)
     k = HttpResponse(r)
